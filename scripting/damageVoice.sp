@@ -96,7 +96,7 @@ public Action OnTakeDamage(int client, int &attacker, int &inflictor, float &dam
 
     char buff[PLATFORM_MAX_PATH];
     GetClientModel(client, buff, sizeof(buff));
-    int i = GetModelIndex(buff);
+    int i = GetSoundIndex(buff);
     if(i == -1) {
         return Plugin_Continue;
     }
@@ -117,7 +117,7 @@ public void OnPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 
     char buff[PLATFORM_MAX_PATH];
     GetClientModel(client, buff, sizeof(buff));
-    int i = GetModelIndex(buff);
+    int i = GetSoundIndex(buff);
     if(i == -1) {
         return;
     }
@@ -143,7 +143,7 @@ public void OnCvarsChanged(ConVar convar, const char[] oldValue, const char[] ne
     SyncConVarValues();
 }
 
-int GetModelIndex(const char[] modelName) {
+int GetSoundIndex(const char[] modelName) {
     char mdPath[PLATFORM_MAX_PATH];
     for(int i = GetArraySize(g_hModelPath)-1; i >= 0; i--) {
         GetArrayString(g_hModelPath, i, mdPath, sizeof(mdPath));
@@ -314,7 +314,7 @@ void PrecacheSounds() {
 public Action CommandTest(int client, int args) {
     char buff[PLATFORM_MAX_PATH];
     GetClientModel(client, buff, sizeof(buff));
-    int i = GetModelIndex(buff);
+    int i = GetSoundIndex(buff);
     if(i == -1) {
         return Plugin_Handled;
     }
