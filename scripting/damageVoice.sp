@@ -62,8 +62,6 @@ public void OnPluginStart()
     g_cDamageVoiceInterval.AddChangeHook(OnCvarsChanged);
     g_cDamageVoiceVolume.AddChangeHook(OnCvarsChanged);
 
-    RegConsoleCmd("sm_test", CommandTest, "");
-
     HookEvent("player_death", OnPlayerDeath, EventHookMode_Pre);
 
     ParseConfig();
