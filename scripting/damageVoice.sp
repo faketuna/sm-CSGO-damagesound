@@ -369,17 +369,3 @@ void PrecacheSounds() {
         }
     }
 }
-
-// USER COMMAND AREA
-
-public Action CommandTest(int client, int args) {
-    char buff[PLATFORM_MAX_PATH];
-    GetClientModel(client, buff, sizeof(buff));
-    int i = GetSoundIndex(buff);
-    if(i == -1) {
-        return Plugin_Handled;
-    }
-    
-    PlaySound(i, client, SND_TYPE_DAMAGE);
-    return Plugin_Handled;
-}
