@@ -39,6 +39,8 @@ Handle g_hModelPath;
 Handle g_hDamageSoundPaths;
 Handle g_hDeathSoundPaths;
 Handle g_hFlags;
+Handle g_hIsDamageSoundsPreCachedArray;
+Handle g_hIsDeathSoundsPreCachedArray;
 
 
 public Plugin myinfo = 
@@ -130,7 +132,20 @@ public void OnConfigsExecuted() {
 }
 
 public void OnMapStart() {
-    PrecacheSounds();
+    //PrecacheSounds(); //TODO() Remove and replace to dynamic precache
+    Handle check;
+    for(int i = GetArraySize(g_hIsDamageSoundsPreCachedArray)-1; i >= 0; i--) {
+        check = GetArrayCell(g_hIsDamageSoundsPreCachedArray, i);
+        for(int j = GetArraySize(check)-1; j >= 0; j--) {
+            SetArrayCell(check, j, false);
+        }
+    }
+    for(int i = GetArraySize(g_hIsDeathSoundsPreCachedArray)-1; i >= 0; i--) {
+        check = GetArrayCell(g_hIsDeathSoundsPreCachedArray, i);
+        for(int j = GetArraySize(check)-1; j >= 0; j--) {
+            SetArrayCell(check, j, false);
+        }
+    }
 }
 
 public void SyncConVarValues() {
@@ -154,6 +169,34 @@ int GetSoundIndex(const char[] modelName) {
     return -1;
 }
 
+bool TryPrecache(Handle soundPaths, int modelIndex, int index, int soundType) {
+    Handle checkPrecached;
+    char soundFile[PLATFORM_MAX_PATH];
+    GetArrayString(soundPaths, index, soundFile, sizeof(soundFile));
+
+    if(soundType == SND_TYPE_DAMAGE) {
+        checkPrecached = GetArrayCell(g_hIsDamageSoundsPreCachedArray, modelIndex);
+        if(GetArrayCell(checkPrecached, index)) {
+            return true;
+        }
+
+        AddToStringTable(FindStringTable("soundprecache"), soundFile);
+        SetArrayCell(checkPrecached, index, true);
+        return GetArrayCell(checkPrecached, index);
+    }
+    if(soundType == SND_TYPE_DEATH) {
+        checkPrecached = GetArrayCell(g_hIsDeathSoundsPreCachedArray, modelIndex);
+        if(GetArrayCell(checkPrecached, index)) {
+            return true;
+        }
+
+        AddToStringTable(FindStringTable("soundprecache"), soundFile);
+        SetArrayCell(checkPrecached, index, true);
+        return GetArrayCell(checkPrecached, index);
+    }
+    return false;
+}
+
 void PlaySound(int soundIndex, int client, int soundType) {
     char soundFile[PLATFORM_MAX_PATH];
     Handle soundPath;
@@ -169,6 +212,9 @@ void PlaySound(int soundIndex, int client, int soundType) {
     
     int size = GetArraySize(soundPath);
     if(size == 1) {
+        if(!TryPrecache(soundPath, soundIndex, 0, soundType)) {
+            return;
+        }
         GetArrayString(soundPath, 0, soundFile, sizeof(soundFile));
         float pos[3];
         GetClientAbsOrigin(client, pos);
@@ -184,6 +230,9 @@ void PlaySound(int soundIndex, int client, int soundType) {
         );
     } else {
         int idx = GetRandomInt(0, size-1);
+        if(!TryPrecache(soundPath, soundIndex, idx, soundType)) {
+            return;
+        }
         GetArrayString(soundPath, idx, soundFile, sizeof(soundFile));
         float pos[3];
         GetClientAbsOrigin(client, pos);
@@ -205,6 +254,8 @@ void ParseConfig() {
     g_hDamageSoundPaths = CreateArray(ByteCountToCells(PLATFORM_MAX_PATH));
     g_hDeathSoundPaths = CreateArray(ByteCountToCells(PLATFORM_MAX_PATH));
     g_hFlags      = CreateArray();
+    g_hIsDamageSoundsPreCachedArray = CreateArray(ByteCountToCells(8));
+    g_hIsDeathSoundsPreCachedArray = CreateArray(ByteCountToCells(8));
 
     char soundListFile[PLATFORM_MAX_PATH];
     BuildPath(Path_SM,soundListFile,sizeof(soundListFile),"configs/damagevoice.cfg");
@@ -220,6 +271,8 @@ void ParseConfig() {
         char fileLocation[PLATFORM_MAX_PATH], item[8];
         Handle damageSoundPath;
         Handle deathSoundPath;
+        Handle damagePrecached;
+        Handle deathPrecached;
         do {
             KvGetString(listFile, "model", fileLocation, sizeof(fileLocation), "");
             if(fileLocation[0] != '\0') {
@@ -227,6 +280,8 @@ void ParseConfig() {
 
                 damageSoundPath = CreateArray(ByteCountToCells(PLATFORM_MAX_PATH));
                 deathSoundPath = CreateArray(ByteCountToCells(PLATFORM_MAX_PATH));
+                damagePrecached = CreateArray();
+                deathPrecached = CreateArray();
                 int flags = 0;
 
                 if(KvGetNum(listFile, "download", 0)) {
@@ -235,11 +290,14 @@ void ParseConfig() {
 
                 PushArrayCell(g_hDamageSoundPaths, damageSoundPath);
                 PushArrayCell(g_hDeathSoundPaths, deathSoundPath);
+                PushArrayCell(g_hIsDamageSoundsPreCachedArray, damagePrecached);
+                PushArrayCell(g_hIsDeathSoundsPreCachedArray, deathPrecached);
                 PushArrayCell(g_hFlags, flags);
 
                 KvGetString(listFile, "damage", fileLocation, sizeof(fileLocation), "");
                 Format(fileLocation, sizeof(fileLocation), "*%s", fileLocation);
                 PushArrayString(damageSoundPath, fileLocation);
+                PushArrayCell(damagePrecached, false);
 
                 for (int i = 2;; i++) {
                     FormatEx(item, sizeof(item), "damage%d", i);
@@ -249,11 +307,13 @@ void ParseConfig() {
                     }
                     Format(fileLocation, sizeof(fileLocation), "*%s", fileLocation);
                     PushArrayString(damageSoundPath, fileLocation);
+                    PushArrayCell(damagePrecached, false);
                 }
 
                 KvGetString(listFile, "death", fileLocation, sizeof(fileLocation), "");
                 Format(fileLocation, sizeof(fileLocation), "*%s", fileLocation);
                 PushArrayString(deathSoundPath, fileLocation);
+                PushArrayCell(deathPrecached, false);
 
                 for (int i = 2;; i++) {
                     FormatEx(item, sizeof(item), "death%d", i);
@@ -263,6 +323,7 @@ void ParseConfig() {
                     }
                     Format(fileLocation, sizeof(fileLocation), "*%s", fileLocation);
                     PushArrayString(deathSoundPath, fileLocation);
+                    PushArrayCell(deathPrecached, false);
                 }
             }
         } while(KvGotoNextKey(listFile));
