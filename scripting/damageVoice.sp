@@ -65,9 +65,6 @@ public void OnPluginStart()
     HookEvent("player_death", OnPlayerDeath, EventHookMode_Pre);
 
     ParseConfig();
-    for(int i = 1; i <= MaxClients; i++) {
-        g_fLastDamageSound[i] = GetGameTime();
-    }
 }
 
 public void OnClientPutInServer(int client)
@@ -143,6 +140,9 @@ public void OnMapStart() {
         for(int j = GetArraySize(check)-1; j >= 0; j--) {
             SetArrayCell(check, j, false);
         }
+    }
+    for(int i = 1; i <= MaxClients; i++) {
+        g_fLastDamageSound[i] = 0.0;
     }
 }
 
