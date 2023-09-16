@@ -43,7 +43,7 @@ Handle g_hFlags;
 
 public Plugin myinfo = 
 {
-    name = "Damage sound",
+    name = "Damage voice",
     author = "faketuna",
     description = "Plays sound when player take damage",
     version = PLUGIN_VERSION,
