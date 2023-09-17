@@ -50,7 +50,7 @@ public Plugin myinfo =
 {
     name = "Damage voice",
     author = "faketuna",
-    description = "Plays sound when player take damage",
+    description = "Plays sound when player take damage.\nSpecial thanks for testing plugin >> kur4yam1, valni_nyas, omoi",
     version = PLUGIN_VERSION,
     url = "https://short.f2a.dev/s/github"
 };
