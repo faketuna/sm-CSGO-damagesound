@@ -1,0 +1,50 @@
+"Phrases"
+{
+    "dv prefix"
+    {
+        "en"        "{purple}[DamageVoice] {default}"
+        "jp"        "{purple}[DamageVoice] {default}"
+    }
+    "dv cmd invalid arguments"
+    {
+        "en"        "Invalid arguments."
+        "jp"        "無効な引数です。"
+    }
+    "dv cmd value out of range"
+    {
+        "#format"   "{1:d},{2:d},{3:d}"
+        "en"        "{1} is out of range. Valid range: {2} ~ {3}"
+        "jp"        "{1}は範囲外の数値です。 有効な範囲: {2}～{3}"
+    }
+    "dv cmd set volume"
+    {
+        "#format"   "{1:s}"
+        "en"        "Damage voice volume set to {green}{1}%%{default}."
+        "jp"        "Damage voiceの音量を{green}{1}%%{default}に設定しました。"
+    }
+    "dv cmd toggle enable"
+    {
+        "en"        "Damage voice now {green}enabled{default}."
+        "jp"        "Damage voiceを{green}有効化{default}しました。"
+    }
+    "dv cmd toggle disable"
+    {
+        "en"        "Damage voice now {darkred}disabled{default}."
+        "jp"        "Damage voiceを{darkred}無効化{default}しました。"
+    }
+    "dv menu title"
+    {
+        "en"        "Damage voice setting menu"
+        "jp"        "Damage voice設定メニュー"
+    }
+    "dv menu disable damage voice"
+    {
+        "en"        "Disable Damage voice: "
+        "jp"        "Saysoundの無効化: "
+    }
+    "dv menu volume"
+    {
+        "en"        "Volume: "
+        "jp"        "音量: "
+    }
+}

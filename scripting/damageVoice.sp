@@ -76,6 +76,10 @@ public void OnPluginStart()
     HookEvent("player_death", OnPlayerDeath, EventHookMode_Pre);
 
     ParseConfig();
+
+    LoadTranslations("common.phrases");
+    LoadTranslations("damagevoice.phrases");
+
     for(int i = 1; i <= MaxClients; i++) {
         if(IsClientConnected(i)) {
             if(AreClientCookiesCached(i)) {
@@ -429,7 +433,7 @@ void PrecacheSounds() {
 
 public Action CommandDVToggle(int client, int args) {
     g_bPlayerSoundDisabled[client] = !g_bPlayerSoundDisabled[client];
-    CPrintToChat(client, "TODO() toggled damage voice to: %s", g_bPlayerSoundDisabled[client] ? "true" : "false");
+    CPrintToChat(client, "%t%t", "dv prefix", g_bPlayerSoundDisabled[client] ? "dv cmd toggle enable" : "dv cmd toggle disable");
     SetClientCookie(client, g_hSoundToggleCookie, g_bPlayerSoundDisabled[client] ? "1" : "0");
     return Plugin_Handled;
 }
@@ -440,14 +444,12 @@ public Action CommandDVVolume(int client, int args) {
         char arg1[4];
         GetCmdArg(1, arg1, sizeof(arg1));
         if(!IsOnlyDicimal(arg1)) {
-            CPrintToChat(client, "TODO() INVALID ARGUMENTS");
+            CPrintToChat(client, "%t%t", "dv prefix", "dv cmd invalid arguments");
             return Plugin_Handled;
         }
         int arg = StringToInt(arg1);
         if(arg > SOUND_VOLUME_MAX || SOUND_VOLUME_MIN > arg) {
-            char buff[8];
-            Format(buff, sizeof(buff), "%d", arg);
-            CPrintToChat(client, "TODO() VALUE OUT OF RANGE");
+            CPrintToChat(client, "%t%t", "dv prefix", "dv cmd value out of range", arg, SOUND_VOLUME_MIN, SOUND_VOLUME_MAX);
             return Plugin_Handled;
         }
 
@@ -455,7 +457,7 @@ public Action CommandDVVolume(int client, int args) {
         char buff[6];
         FloatToString(g_fPlayerSoundVolume[client], buff, sizeof(buff));
         SetClientCookie(client, g_hSoundVolumeCookie, buff);
-        CPrintToChat(client, "TODO() VOLUME SET");
+        CPrintToChat(client, "%t%t", "dv prefix", "dv cmd set volume", arg1);
         return Plugin_Handled;
     }
 
