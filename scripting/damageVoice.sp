@@ -56,7 +56,7 @@ public void OnPluginStart()
 {
     g_cDamageVoiceEnabled            = CreateConVar("sm_dv_enable", "1", "Toggles damage voice globaly", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_cDamageVoiceInterval        = CreateConVar("sm_dv_interval", "2.0", "Time between each sound to trigger per player. 0.0 to disable", FCVAR_NONE, true, 0.0, true, 30.0);
-    g_cDamageVoiceVolume        = CreateConVar("sm_dv_volume", "0.5", "Global damage sound volume", FCVAR_NONE, true, 0.0, true, 1.0);
+    g_cDamageVoiceVolume        = CreateConVar("sm_dv_volume", "1.0", "Global damage sound volume. If set to 1.0 you should be normalize sound file volume amplitude to -8.0db", FCVAR_NONE, true, 0.0, true, 1.0);
 
     g_cDamageVoiceEnabled.AddChangeHook(OnCvarsChanged);
     g_cDamageVoiceInterval.AddChangeHook(OnCvarsChanged);
