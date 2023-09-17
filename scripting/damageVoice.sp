@@ -72,6 +72,9 @@ public void OnPluginStart()
 
     RegConsoleCmd("dv_volume", CommandDVVolume, "Set damage voice volume per player.");
     RegConsoleCmd("dv_toggle", CommandDVToggle, "Toggle damage voice per player.");
+    RegConsoleCmd("dv_menu", CommandDVMenu, "Open settings menu");
+    RegConsoleCmd("dvmenu", CommandDVMenu, "Open settings menu");
+    RegConsoleCmd("dvm", CommandDVMenu, "Open settings menu");
 
     HookEvent("player_death", OnPlayerDeath, EventHookMode_Pre);
 
@@ -80,6 +83,7 @@ public void OnPluginStart()
     LoadTranslations("common.phrases");
     LoadTranslations("damagevoice.phrases");
 
+    SetCookieMenuItem(SoundSettingsMenu, 0 ,"Damage voice");
     for(int i = 1; i <= MaxClients; i++) {
         if(IsClientConnected(i)) {
             if(AreClientCookiesCached(i)) {
@@ -262,7 +266,7 @@ void PlaySound(int soundIndex, int client, int soundType) {
         }
         GetArrayString(soundPath, 0, soundFile, sizeof(soundFile));
         for(int i = 1; i <= MaxClients; i++) {
-            if(!IsClientInGame(i) || IsFakeClient(i) && !g_bPlayerSoundDisabled[i]) {
+            if(!IsClientInGame(i) || IsFakeClient(i) && g_bPlayerSoundDisabled[i]) {
                 continue;
             }
             EmitSoundToClient(
@@ -288,7 +292,7 @@ void PlaySound(int soundIndex, int client, int soundType) {
         }
         GetArrayString(soundPath, idx, soundFile, sizeof(soundFile));
         for(int i = 1; i <= MaxClients; i++) {
-            if(!IsClientInGame(i) || IsFakeClient(i) || !g_bPlayerSoundDisabled[i]) {
+            if(!IsClientInGame(i) || IsFakeClient(i) || g_bPlayerSoundDisabled[i]) {
                 continue;
             }
             EmitSoundToClient(
@@ -431,13 +435,17 @@ void PrecacheSounds() {
     }
 }
 
-public Action CommandDVToggle(int client, int args) {
-    g_bPlayerSoundDisabled[client] = !g_bPlayerSoundDisabled[client];
-    CPrintToChat(client, "%t%t", "dv prefix", g_bPlayerSoundDisabled[client] ? "dv cmd toggle enable" : "dv cmd toggle disable");
-    SetClientCookie(client, g_hSoundToggleCookie, g_bPlayerSoundDisabled[client] ? "1" : "0");
+public Action CommandDVMenu(int client, int args) {
+    DisplaySettingsMenu(client);
     return Plugin_Handled;
 }
 
+public Action CommandDVToggle(int client, int args) {
+    g_bPlayerSoundDisabled[client] = !g_bPlayerSoundDisabled[client];
+    CPrintToChat(client, "%t%t", "dv prefix", !g_bPlayerSoundDisabled[client] ? "dv cmd toggle enable" : "dv cmd toggle disable");
+    SetClientCookie(client, g_hSoundToggleCookie, g_bPlayerSoundDisabled[client] ? "1" : "0");
+    return Plugin_Handled;
+}
 
 public Action CommandDVVolume(int client, int args) {
     if(args >= 1) {
@@ -461,7 +469,7 @@ public Action CommandDVVolume(int client, int args) {
         return Plugin_Handled;
     }
 
-    //DisplaySettingsMenu(client);
+    DisplaySettingsMenu(client);
     return Plugin_Handled;
 }
 
@@ -472,4 +480,87 @@ bool IsOnlyDicimal(char[] string) {
         }
     }
     return true;
+}
+
+void DisplaySettingsMenu(int client)
+{
+    SetGlobalTransTarget(client);
+    Menu prefmenu = CreateMenu(SoundSettingHandler, MENU_ACTIONS_DEFAULT);
+
+    char menuTitle[64];
+    Format(menuTitle, sizeof(menuTitle), "%t", "dv menu title");
+    prefmenu.SetTitle(menuTitle);
+
+    char soundDisabled[64], soundVolume[64];
+
+    Format(soundDisabled, sizeof(soundDisabled), "%t%t","dv menu disable damage voice", g_bPlayerSoundDisabled[client] ? "Yes" : "No");
+    prefmenu.AddItem("dv_pref_disable", soundDisabled);
+
+    Format(soundVolume, sizeof(soundVolume), "%t%.0f%","dv menu volume", g_fPlayerSoundVolume[client] * 100);
+    switch (RoundToZero((g_fPlayerSoundVolume[client]*100)))
+    {
+        case 10: { prefmenu.AddItem("dv_pref_volume_100", soundVolume);}
+        case 20: { prefmenu.AddItem("dv_pref_volume_10", soundVolume);}
+        case 30: { prefmenu.AddItem("dv_pref_volume_20", soundVolume);}
+        case 40: { prefmenu.AddItem("dv_pref_volume_30", soundVolume);}
+        case 50: { prefmenu.AddItem("dv_pref_volume_40", soundVolume);}
+        case 60: { prefmenu.AddItem("dv_pref_volume_50", soundVolume);}
+        case 70: { prefmenu.AddItem("dv_pref_volume_60", soundVolume);}
+        case 80: { prefmenu.AddItem("dv_pref_volume_70", soundVolume);}
+        case 90: { prefmenu.AddItem("dv_pref_volume_80", soundVolume);}
+        case 100: { prefmenu.AddItem("dv_pref_volume_90", soundVolume);}
+        default: { prefmenu.AddItem("dv_pref_volume_100", soundVolume);}
+    }
+    prefmenu.ExitBackButton = true;
+    prefmenu.Display(client, MENU_TIME_FOREVER);
+}
+
+public int SoundSettingHandler(Menu prefmenu, MenuAction actions, int client, int item)
+{
+    SetGlobalTransTarget(client);
+    if (actions == MenuAction_Select)
+    {
+        char preference[32];
+        GetMenuItem(prefmenu, item, preference, sizeof(preference));
+        if(StrEqual(preference, "dv_pref_disable"))
+        {
+            g_bPlayerSoundDisabled[client] = !g_bPlayerSoundDisabled[client];
+            SetClientCookie(client, g_hSoundToggleCookie, g_bPlayerSoundDisabled[client] ? "1" : "0");
+        }
+        if(StrContains(preference, "dv_pref_volume_") >= 0)
+        {
+            ReplaceString(preference, sizeof(preference), "dv_pref_volume_", "");
+            int val = StringToInt(preference);
+            g_fPlayerSoundVolume[client] = float(val) / 100;
+            char buff[6];
+            FloatToString(g_fPlayerSoundVolume[client], buff, sizeof(buff));
+            SetClientCookie(client, g_hSoundVolumeCookie, buff);
+        }
+        DisplaySettingsMenu(client);
+    }
+    else if (actions == MenuAction_Cancel)
+    {
+        if (item == MenuCancel_ExitBack)
+        {
+            ShowCookieMenu(client);
+        }
+    }
+    else if (actions == MenuAction_End)
+    {
+        CloseHandle(prefmenu);
+    }
+    return 0;
+}
+
+public void SoundSettingsMenu(int client, CookieMenuAction actions, any info, char[] buffer, int maxlen)
+{
+    if (actions == CookieMenuAction_DisplayOption)
+    {
+        Format(buffer, maxlen, "Damage voice");
+    }
+    
+    if (actions == CookieMenuAction_SelectOption)
+    {
+        DisplaySettingsMenu(client);
+    }
 }
