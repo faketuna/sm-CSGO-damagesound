@@ -22,7 +22,6 @@ enum {
 
 ConVar g_cDamageVoiceEnabled;
 ConVar g_cDamageVoiceInterval;
-ConVar g_cDamageVoiceVolume;
 
 Handle g_hSoundToggleCookie;
 Handle g_hSoundVolumeCookie;
@@ -30,7 +29,6 @@ Handle g_hSoundVolumeCookie;
 // Plugin cvar related.
 bool g_bPluginEnabled;
 float g_fSoundInterval;
-float g_fSoundVolume;
 
 // Plugin logic related.
 float g_fLastDamageSound[MAXPLAYERS+1];
@@ -61,11 +59,9 @@ public void OnPluginStart()
 {
     g_cDamageVoiceEnabled            = CreateConVar("sm_dv_enable", "1", "Toggles damage voice globaly", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_cDamageVoiceInterval        = CreateConVar("sm_dv_interval", "2.0", "Time between each sound to trigger per player. 0.0 to disable", FCVAR_NONE, true, 0.0, true, 30.0);
-    g_cDamageVoiceVolume        = CreateConVar("sm_dv_volume", "1.0", "Global damage voice volume. If set to 1.0 you should be normalize sound file volume amplitude to -8.0db", FCVAR_NONE, true, 0.0, true, 1.0);
 
     g_cDamageVoiceEnabled.AddChangeHook(OnCvarsChanged);
     g_cDamageVoiceInterval.AddChangeHook(OnCvarsChanged);
-    g_cDamageVoiceVolume.AddChangeHook(OnCvarsChanged);
 
     g_hSoundVolumeCookie            = RegClientCookie("cookie_dv_volume", "Damage voice volume", CookieAccess_Protected);
     g_hSoundToggleCookie            = RegClientCookie("cookie_dv_toggle", "Damage voice toggle", CookieAccess_Protected);
@@ -179,7 +175,6 @@ public void OnConfigsExecuted() {
 }
 
 public void OnMapStart() {
-    //PrecacheSounds(); //TODO() Remove and replace to dynamic precache
     Handle check;
     for(int i = GetArraySize(g_hIsDamageSoundsPreCachedArray)-1; i >= 0; i--) {
         check = GetArrayCell(g_hIsDamageSoundsPreCachedArray, i);
@@ -202,7 +197,6 @@ public void OnMapStart() {
 public void SyncConVarValues() {
     g_bPluginEnabled        = GetConVarBool(g_cDamageVoiceEnabled);
     g_fSoundInterval        = GetConVarFloat(g_cDamageVoiceInterval);
-    g_fSoundVolume          = GetConVarFloat(g_cDamageVoiceVolume);
 }
 
 public void OnCvarsChanged(ConVar convar, const char[] oldValue, const char[] newValue) {
