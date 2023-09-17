@@ -15,8 +15,6 @@
 #define SOUND_VOLUME_MAX 100
 #define SOUND_VOLUME_MIN 0
 
-#define CHARA_NAME_MAX_SIZE 64
-
 enum {
     SND_TYPE_DAMAGE = 0,
     SND_TYPE_DEATH = 1
@@ -25,6 +23,9 @@ enum {
 ConVar g_cDamageVoiceEnabled;
 ConVar g_cDamageVoiceInterval;
 ConVar g_cDamageVoiceVolume;
+
+Handle g_hSoundToggleCookie;
+Handle g_hSoundVolumeCookie;
 
 // Plugin cvar related.
 bool g_bPluginEnabled;
@@ -42,6 +43,10 @@ Handle g_hFlags;
 Handle g_hIsDamageSoundsPreCachedArray;
 Handle g_hIsDeathSoundsPreCachedArray;
 
+// Client prefs (Player setting) related.
+bool g_bPlayerSoundDisabled[MAXPLAYERS+1];
+float g_fPlayerSoundVolume[MAXPLAYERS+1];
+
 
 public Plugin myinfo = 
 {
@@ -56,16 +61,55 @@ public void OnPluginStart()
 {
     g_cDamageVoiceEnabled            = CreateConVar("sm_dv_enable", "1", "Toggles damage voice globaly", FCVAR_NOTIFY, true, 0.0, true, 1.0);
     g_cDamageVoiceInterval        = CreateConVar("sm_dv_interval", "2.0", "Time between each sound to trigger per player. 0.0 to disable", FCVAR_NONE, true, 0.0, true, 30.0);
-    g_cDamageVoiceVolume        = CreateConVar("sm_dv_volume", "1.0", "Global damage sound volume. If set to 1.0 you should be normalize sound file volume amplitude to -8.0db", FCVAR_NONE, true, 0.0, true, 1.0);
+    g_cDamageVoiceVolume        = CreateConVar("sm_dv_volume", "1.0", "Global damage voice volume. If set to 1.0 you should be normalize sound file volume amplitude to -8.0db", FCVAR_NONE, true, 0.0, true, 1.0);
 
     g_cDamageVoiceEnabled.AddChangeHook(OnCvarsChanged);
     g_cDamageVoiceInterval.AddChangeHook(OnCvarsChanged);
     g_cDamageVoiceVolume.AddChangeHook(OnCvarsChanged);
 
+    g_hSoundVolumeCookie            = RegClientCookie("cookie_dv_volume", "Damage voice volume", CookieAccess_Protected);
+    g_hSoundToggleCookie            = RegClientCookie("cookie_dv_toggle", "Damage voice toggle", CookieAccess_Protected);
+
+    RegConsoleCmd("dv_volume", CommandDVVolume, "Set damage voice volume per player.");
+    RegConsoleCmd("dv_toggle", CommandDVToggle, "Toggle damage voice per player.");
+
     HookEvent("player_death", OnPlayerDeath, EventHookMode_Pre);
 
     ParseConfig();
+    for(int i = 1; i <= MaxClients; i++) {
+        if(IsClientConnected(i)) {
+            if(AreClientCookiesCached(i)) {
+                OnClientCookiesCached(i);
+            }
+        }
+    }
 }
+
+public void OnClientCookiesCached(int client) {
+    if (IsFakeClient(client)) {
+        return;
+    }
+
+    char cookieValue[128];
+    GetClientCookie(client, g_hSoundVolumeCookie, cookieValue, sizeof(cookieValue));
+
+    if (!StrEqual(cookieValue, "")) {
+        g_fPlayerSoundVolume[client] = StringToFloat(cookieValue);
+    } else {
+        g_fPlayerSoundVolume[client] = 1.0;
+        SetClientCookie(client, g_hSoundVolumeCookie, "1.0");
+    }
+
+    GetClientCookie(client, g_hSoundToggleCookie, cookieValue, sizeof(cookieValue));
+
+    if (!StrEqual(cookieValue, "")) {
+        g_bPlayerSoundDisabled[client] = view_as<bool>(StringToInt(cookieValue));
+    } else {
+        g_bPlayerSoundDisabled[client] = false;
+        SetClientCookie(client, g_hSoundToggleCookie, "0");
+    }
+}
+
 
 public void OnClientPutInServer(int client)
 {
@@ -207,43 +251,58 @@ void PlaySound(int soundIndex, int client, int soundType) {
     if(soundType == SND_TYPE_DEATH) {
         soundPath = GetArrayCell(g_hDeathSoundPaths ,soundIndex);
     }
-    
     int size = GetArraySize(soundPath);
     if(size == 1) {
         if(!TryPrecache(soundPath, soundIndex, 0, soundType)) {
             return;
         }
         GetArrayString(soundPath, 0, soundFile, sizeof(soundFile));
-        float pos[3];
-        GetClientAbsOrigin(client, pos);
-        EmitAmbientSound(
-            soundFile,
-            pos,
-            client,
-            SNDLEVEL_NORMAL,
-            SND_NOFLAGS,
-            g_fSoundVolume,
-            SNDPITCH_NORMAL,
-            0.0
-        );
+        for(int i = 1; i <= MaxClients; i++) {
+            if(!IsClientInGame(i) || IsFakeClient(i) && !g_bPlayerSoundDisabled[i]) {
+                continue;
+            }
+            EmitSoundToClient(
+                i,
+                soundFile,
+                client,
+                SNDCHAN_STATIC,
+                SNDLEVEL_NORMAL,
+                SND_NOFLAGS,
+                g_fPlayerSoundVolume[i],
+                SNDPITCH_NORMAL,
+                0,
+                NULL_VECTOR,
+                NULL_VECTOR,
+                true,
+                0.0
+            );
+        }
     } else {
         int idx = GetRandomInt(0, size-1);
         if(!TryPrecache(soundPath, soundIndex, idx, soundType)) {
             return;
         }
         GetArrayString(soundPath, idx, soundFile, sizeof(soundFile));
-        float pos[3];
-        GetClientAbsOrigin(client, pos);
-        EmitAmbientSound(
-            soundFile,
-            pos,
-            client,
-            SNDLEVEL_NORMAL,
-            SND_NOFLAGS,
-            g_fSoundVolume,
-            SNDPITCH_NORMAL,
-            0.0
-        );
+        for(int i = 1; i <= MaxClients; i++) {
+            if(!IsClientInGame(i) || IsFakeClient(i) || !g_bPlayerSoundDisabled[i]) {
+                continue;
+            }
+            EmitSoundToClient(
+                i,
+                soundFile,
+                client,
+                SNDCHAN_STATIC,
+                SNDLEVEL_NORMAL,
+                SND_NOFLAGS,
+                g_fPlayerSoundVolume[i],
+                SNDPITCH_NORMAL,
+                0,
+                NULL_VECTOR,
+                NULL_VECTOR,
+                true,
+                0.0
+            );
+        }
     }
 }
 
@@ -366,4 +425,49 @@ void PrecacheSounds() {
             AddToStringTable(FindStringTable("soundprecache"), soundFile);
         }
     }
+}
+
+public Action CommandDVToggle(int client, int args) {
+    g_bPlayerSoundDisabled[client] = !g_bPlayerSoundDisabled[client];
+    CPrintToChat(client, "TODO() toggled damage voice to: %s", g_bPlayerSoundDisabled[client] ? "true" : "false");
+    SetClientCookie(client, g_hSoundToggleCookie, g_bPlayerSoundDisabled[client] ? "1" : "0");
+    return Plugin_Handled;
+}
+
+
+public Action CommandDVVolume(int client, int args) {
+    if(args >= 1) {
+        char arg1[4];
+        GetCmdArg(1, arg1, sizeof(arg1));
+        if(!IsOnlyDicimal(arg1)) {
+            CPrintToChat(client, "TODO() INVALID ARGUMENTS");
+            return Plugin_Handled;
+        }
+        int arg = StringToInt(arg1);
+        if(arg > SOUND_VOLUME_MAX || SOUND_VOLUME_MIN > arg) {
+            char buff[8];
+            Format(buff, sizeof(buff), "%d", arg);
+            CPrintToChat(client, "TODO() VALUE OUT OF RANGE");
+            return Plugin_Handled;
+        }
+
+        g_fPlayerSoundVolume[client] = float(StringToInt(arg1)) / 100;
+        char buff[6];
+        FloatToString(g_fPlayerSoundVolume[client], buff, sizeof(buff));
+        SetClientCookie(client, g_hSoundVolumeCookie, buff);
+        CPrintToChat(client, "TODO() VOLUME SET");
+        return Plugin_Handled;
+    }
+
+    //DisplaySettingsMenu(client);
+    return Plugin_Handled;
+}
+
+bool IsOnlyDicimal(char[] string) {
+    for(int i = 0; i < strlen(string); i++) {
+        if (!IsCharNumeric(string[i])) {
+            return false;
+        }
+    }
+    return true;
 }
