@@ -196,6 +196,7 @@ public void OnMapStart() {
     for(int i = 1; i <= MaxClients; i++) {
         g_fLastDamageSound[i] = 0.0;
     }
+    AddDownloadAll();
 }
 
 public void SyncConVarValues() {
@@ -399,7 +400,7 @@ void ParseConfig() {
     CloseHandle(listFile);
 }
 
-void PrecacheSounds() {
+void AddDownloadAll() {
     char soundFile[PLATFORM_MAX_PATH];
     char buff[PLATFORM_MAX_PATH];
     Handle damageSoundPath;
@@ -413,24 +414,20 @@ void PrecacheSounds() {
 
         for(int j = GetArraySize(damageSoundPath)-1; j >= 0; j--) {
             GetArrayString(damageSoundPath, j, soundFile, sizeof(soundFile));
-
             if(flags & SOUND_FLAG_DOWNLOAD) {
+                ReplaceString(soundFile, sizeof(soundFile), "*", "", false);
                 Format(buff, sizeof(buff), "sound/%s", soundFile);
                 AddFileToDownloadsTable(buff);
             }
-            Format(soundFile, sizeof(soundFile), "%s", soundFile);
-            AddToStringTable(FindStringTable("soundprecache"), soundFile);
         }
 
         for(int j = GetArraySize(deathSoundPath)-1; j >= 0; j--) {
             GetArrayString(deathSoundPath, j, soundFile, sizeof(soundFile));
-
             if(flags & SOUND_FLAG_DOWNLOAD) {
+                ReplaceString(soundFile, sizeof(soundFile), "*", "", false);
                 Format(buff, sizeof(buff), "sound/%s", soundFile);
                 AddFileToDownloadsTable(buff);
             }
-            Format(soundFile, sizeof(soundFile), "%s", soundFile);
-            AddToStringTable(FindStringTable("soundprecache"), soundFile);
         }
     }
 }
