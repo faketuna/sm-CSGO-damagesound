@@ -40,7 +40,7 @@
     "dv menu disable damage voice"
     {
         "en"        "Disable Damage voice: "
-        "jp"        "Saysoundの無効化: "
+        "jp"        "Damage voiceの無効化: "
     }
     "dv menu volume"
     {
