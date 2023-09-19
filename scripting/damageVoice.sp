@@ -133,6 +133,9 @@ public Action OnTakeDamage(int client, int &attacker, int &inflictor, float &dam
     if(IsFakeClient(client)) {
         return Plugin_Continue;
     }
+    if(GetClientTeam(client) == GetClientTeam(attacker)) {
+        return Plugin_Continue;
+    }
 
     float ft = GetGameTime() - g_fLastDamageSound[client];
     if (ft <= g_fSoundInterval && g_fSoundInterval != 0.0) {
