@@ -58,7 +58,7 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
     g_cDamageVoiceEnabled            = CreateConVar("sm_dv_enable", "1", "Toggles damage voice globaly", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-    g_cDamageVoiceInterval        = CreateConVar("sm_dv_interval", "2.0", "Time between each sound to trigger per player. 0.0 to disable", FCVAR_NONE, true, 0.0, true, 30.0);
+    g_cDamageVoiceInterval        = CreateConVar("sm_dv_interval", "4.0", "Time between each sound to trigger per player. 0.0 to disable", FCVAR_NONE, true, 0.0, true, 30.0);
 
     g_cDamageVoiceEnabled.AddChangeHook(OnCvarsChanged);
     g_cDamageVoiceInterval.AddChangeHook(OnCvarsChanged);
@@ -131,6 +131,9 @@ public Action OnTakeDamage(int client, int &attacker, int &inflictor, float &dam
         return Plugin_Continue;
     }
     if(IsFakeClient(client)) {
+        return Plugin_Continue;
+    }
+    if(GetClientTeam(client) == GetClientTeam(attacker)) {
         return Plugin_Continue;
     }
 
