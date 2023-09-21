@@ -73,6 +73,7 @@ public void OnPluginStart()
     RegConsoleCmd("dvm", CommandDVMenu, "Open settings menu");
 
     HookEvent("player_death", OnPlayerDeath, EventHookMode_Pre);
+    AddNormalSoundHook(NormalSoundHook);
 
     ParseConfig();
 
@@ -112,6 +113,13 @@ public void OnClientCookiesCached(int client) {
         g_bPlayerSoundDisabled[client] = false;
         SetClientCookie(client, g_hSoundToggleCookie, "0");
     }
+}
+
+public Action NormalSoundHook(int clients[MAXPLAYERS], int &numClients, char sample[PLATFORM_MAX_PATH], int &entity, int &channel, float &volume, int &level, int &pitch, int &flags, char soundEntry[PLATFORM_MAX_PATH], int &seed) {
+    if(strncmp(sample, "~player/death", 13, false) == 0 || strncmp(sample, "~player/damage", 14, false) == 0){
+        return Plugin_Handled;
+    }
+    return Plugin_Continue;
 }
 
 
