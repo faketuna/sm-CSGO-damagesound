@@ -152,6 +152,10 @@ public Action OnTakeDamage(int client, int &attacker, int &inflictor, float &dam
         return Plugin_Continue;
     }
 
+    if(GetClientHealth(client) - RoundToCeil(damage) <= 0) {
+        return Plugin_Continue;
+    }
+
     char buff[PLATFORM_MAX_PATH];
     GetClientModel(client, buff, sizeof(buff));
     int i = GetSoundIndex(buff);
