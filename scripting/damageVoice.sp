@@ -278,7 +278,10 @@ void PlaySound(int soundIndex, int client, int soundType) {
         }
         GetArrayString(soundPath, 0, soundFile, sizeof(soundFile));
         for(int i = 1; i <= MaxClients; i++) {
-            if(!IsClientInGame(i) || IsFakeClient(i) && g_bPlayerSoundDisabled[i]) {
+            if(!IsClientInGame(i) || IsFakeClient(i)) {
+                continue;
+            }
+            if(g_bPlayerSoundDisabled[i]) {
                 continue;
             }
             EmitSoundToClient(
@@ -304,7 +307,10 @@ void PlaySound(int soundIndex, int client, int soundType) {
         }
         GetArrayString(soundPath, idx, soundFile, sizeof(soundFile));
         for(int i = 1; i <= MaxClients; i++) {
-            if(!IsClientInGame(i) || IsFakeClient(i) || g_bPlayerSoundDisabled[i]) {
+            if(!IsClientInGame(i) || IsFakeClient(i)) {
+                continue;
+            }
+            if(g_bPlayerSoundDisabled[i]) {
                 continue;
             }
             EmitSoundToClient(
